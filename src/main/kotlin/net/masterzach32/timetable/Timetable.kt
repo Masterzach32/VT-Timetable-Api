@@ -66,9 +66,7 @@ object Timetable {
         val requestParams = getDefaultRequestParams()
 
         requestParams["CAMPUS"] = campus.id
-
         requestParams["TERMYEAR"] = term.code
-
         requestParams["CORE_CODE"] = curriculum.code
 
         if (crn != null) {

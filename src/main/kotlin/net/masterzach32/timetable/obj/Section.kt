@@ -52,11 +52,12 @@ data class Section(
             )
 
             val doc = Jsoup.parse(request.asString().body)
-            println(doc)
 
             return doc.selectFirst(".plaintable").getElementsByTag("tr").let {
                 Comments(
                         it value "Catalog Description",
+                        it meetingTable "Meeting Times",
+                        it instructor "Section Info",
                         it value "Comments",
                         it value "Cross-Listed with",
                         it value "Linked with",
@@ -88,6 +89,26 @@ data class Section(
                 .getElementsByClass("pldefault").text()
     }
 
+    private infix fun Elements.meetingTable(label: String): List<MeetingTime> {
+        return this.first { it.getElementsByClass("pllabel")?.text()?.contains(label) ?: false }
+                .let { table ->
+                    table.getElementsByTag("tr").drop(2)
+                            .map { row ->
+                                row.children().drop(1).map { it.text().replace("\n", "") }.let {
+                                    if (it.size > 5)
+                                        MeetingTime(it[4], it[5], it[6], it[7])
+                                    else
+                                        MeetingTime(it[0], it[1], it[2], it[3])
+                                }
+                            }
+                }
+    }
+
+    private infix fun Elements.instructor(label: String): String {
+        return this.first { it.getElementsByClass("pllabel")?.text()?.contains(label) ?: false }
+                .getElementsByTag("tr").drop(3).first().children().first().text().replace("\n", "")
+    }
+
     data class MeetingTime(
             val days: String,
             val startTime: String,
@@ -97,6 +118,8 @@ data class Section(
 
     data class Comments(
             val description: String,
+            val meetingTimes: List<MeetingTime>,
+            val instructor: String,
             val comments: String,
             val crossLinkedWith: String,
             val linkedWith: String,

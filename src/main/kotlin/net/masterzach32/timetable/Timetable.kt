@@ -194,14 +194,16 @@ object Timetable {
                 logger.warn("Encountered ${e.javaClass.simpleName} when trying to parse row " +
                         "\"${row.text()}\": ${e.message}. Skipping. Please make an issue on Github if you " +
                         "believe this is an error with the API.")
+                e.printStackTrace()
             }
         }
         return sections
     }
 
     private fun parseSection(tableRow: Element, additionalData: List<Element>, term: Term, campus: Campus): Section? {
+        val rowText = tableRow.getElementsByTag("td").text()
         val rowElements = tableRow.getElementsByTag("td").map { it.text().replace("\n", "") }
-        if (rowElements.contains("* Additional Times *") || rowElements.contains("Comments for CRN"))
+        if (rowText.contains("* Additional Times *") || rowText.contains("Comments for CRN"))
             return null
 
         val arr = rowElements.any { it.contains("(ARR)") }
@@ -240,7 +242,7 @@ object Timetable {
 
         for (it in additionalData) {
             val elements = it.getElementsByTag("td").map { it.text().replace("\n", "") }
-            if (elements.contains("Comments for CRN")) {
+            if (elements.first().contains("Comments for CRN")) {
                 comments = elements[1]
             } else if (elements.contains("* Additional Times *")) {
                 additionalTimes = Section.MeetingTime(elements[5], elements[6], elements[7], elements[8])
@@ -269,6 +271,7 @@ object Timetable {
 
     private fun getDefaultRequestParams() = mutableMapOf<String, Any>(
             "BTN_PRESSED" to "FIND class sections",
-            "SCHDTYPE" to "%"
+            "SCHDTYPE" to "%",
+            "disp_comments_in" to "Y"
     )
 }

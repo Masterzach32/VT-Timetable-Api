@@ -106,7 +106,7 @@ data class Section(
 
     private infix fun Elements.instructor(label: String): String {
         return this.first { it.getElementsByClass("pllabel")?.text()?.contains(label) ?: false }
-                .getElementsByTag("tr").drop(3).first().children().first().text().replace("\n", "")
+                .getElementsByTag("tr").drop(3).first().children().first().text()
     }
 
     data class MeetingTime(

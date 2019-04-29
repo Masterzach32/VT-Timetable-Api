@@ -36,7 +36,6 @@ object Timetable {
     fun lookupCourse(
             subjectCode: String,
             courseNumber: String,
-            instructor: String? = null,
             curriculum: Curriculum = Curriculum.All,
             term: Term = getCurrentTerm(),
             openOnly: Boolean = OPEN_ONLY_DEFAULT
@@ -44,7 +43,6 @@ object Timetable {
         return lookup(
                 subjectCode = subjectCode,
                 courseNumber = courseNumber,
-                instructor = instructor,
                 curriculum = curriculum,
                 term = term,
                 openOnly = openOnly
@@ -56,7 +54,6 @@ object Timetable {
             crn: String? = null,
             subjectCode: String? = null,
             courseNumber: String? = null,
-            instructor: String? = null,
             curriculum: Curriculum = Curriculum.All,
             term: Term = getCurrentTerm(),
             campus: Campus = Campus.BLACKSBURG,
@@ -93,14 +90,7 @@ object Timetable {
 
         requestParams["open_only"] = if (openOnly) "on" else ""
 
-        val sections = parseTable(makeRequest(requestParams), term, campus)
-
-        return sections.filter {
-            if (instructor != null)
-                it.instructor.toLowerCase().contains(instructor.toLowerCase())
-            else
-                true
-        }
+        return parseTable(makeRequest(requestParams), term, campus)
     }
 
     @JvmStatic

@@ -6,14 +6,6 @@ import net.masterzach32.timetable.TimetableException
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
 
-/*
- * VT-Timetable-Api - Created on 8/7/2018
- * Author: Zach Kozar
- * 
- * This code is licensed under the GNU GPL v3
- * You can find more info in the LICENSE file at the project root.
- */
-
 /**
  * @author Zach Kozar
  * @version 8/7/2018

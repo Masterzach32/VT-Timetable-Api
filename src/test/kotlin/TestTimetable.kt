@@ -1,8 +1,10 @@
 import junit.framework.TestCase
 import net.masterzach32.timetable.Timetable
 import net.masterzach32.timetable.obj.Campus
+import net.masterzach32.timetable.obj.Curriculum
 import net.masterzach32.timetable.obj.Session
 import net.masterzach32.timetable.obj.Term
+import net.masterzach32.timetable.pullSectionComments
 
 class TestTimetable : TestCase() {
 
@@ -42,6 +44,10 @@ class TestTimetable : TestCase() {
     }
 
     fun testGetComments() {
-        //println(Timetable.lookupCrn("85942", term = Term("201909"))!!.pullSectionComments())
+        assertNotNull(Timetable.lookupCrn("85942", term = Term("201909"))!!.pullSectionComments())
+    }
+
+    fun testSectionsForCle() {
+        assert(Timetable.lookupCle(Curriculum.CLE.AREA_2, Term("201909")).isNotEmpty())
     }
 }

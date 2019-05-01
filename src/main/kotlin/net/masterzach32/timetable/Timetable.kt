@@ -50,6 +50,15 @@ object Timetable {
     }
 
     @JvmStatic
+    fun lookupCle(
+            area: Curriculum,
+            term: Term = getCurrentTerm(),
+            openOnly: Boolean = OPEN_ONLY_DEFAULT
+    ): List<Section> {
+        return lookup(curriculum = area, term = term)
+    }
+
+    @JvmStatic
     fun lookup(
             crn: String? = null,
             subjectCode: String? = null,

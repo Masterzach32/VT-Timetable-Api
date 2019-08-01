@@ -2,6 +2,8 @@
 
 A Kotlin API for the [Virginia Tech Timetable of Classes](https://banweb.banner.vt.edu/ssb/prod/HZSKVTSC.P_DispRequest)
 
+Used by the course opening notifier [Course Patrol](https://coursepatrol.net)!
+
 ### Usage:
 
 The API provides access to the timetable through the Timetable object. 

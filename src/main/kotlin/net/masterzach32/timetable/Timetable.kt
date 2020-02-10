@@ -1,7 +1,7 @@
 package net.masterzach32.timetable
 
+import kong.unirest.Unirest
 import net.masterzach32.timetable.obj.*
-import com.mashape.unirest.http.Unirest
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -157,8 +157,8 @@ object Timetable {
 
     private fun makeRequest(requestParams: Map<String, Any>): Document {
         val request = Unirest.post(POST_URL)
-        request.fields(requestParams)
-        request.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36")
+                .fields(requestParams)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36")
 
         val response = try {
             request.asString()

@@ -1,6 +1,6 @@
 package net.masterzach32.timetable
 
-import com.mashape.unirest.http.Unirest
+import kong.unirest.Unirest
 import net.masterzach32.timetable.obj.Section
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
@@ -8,16 +8,16 @@ import org.jsoup.select.Elements
 fun Section.pullSectionComments(): Section.Comments {
     try {
         val request = Unirest.post(Timetable.COMMENTS_URL)
-        request.fields(
-                mutableMapOf<String, Any>(
-                        "CRN" to crn,
-                        "TERM" to term.month.id,
-                        "YEAR" to term.year,
-                        "SUBJ" to subjectCode,
-                        "CRSE" to courseNumber,
-                        "history" to "N"
+                .fields(
+                        mutableMapOf<String, Any>(
+                                "CRN" to crn,
+                                "TERM" to term.month.id,
+                                "YEAR" to term.year,
+                                "SUBJ" to subjectCode,
+                                "CRSE" to courseNumber,
+                                "history" to "N"
+                        )
                 )
-        )
 
         val doc = Jsoup.parse(request.asString().body)
 

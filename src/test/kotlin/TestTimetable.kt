@@ -11,7 +11,7 @@ class TestTimetable : TestCase() {
     fun testGetTerms() {
         assertEquals(
                 Timetable.getAvailableTerms(),
-                listOf("201901", "201906", "201907", "201909").map { Term(it) }
+                listOf("202001").map { Term(it) }
         )
     }
 

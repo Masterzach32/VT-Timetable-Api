@@ -55,7 +55,7 @@ object Timetable {
             term: Term = getCurrentTerm(),
             openOnly: Boolean = OPEN_ONLY_DEFAULT
     ): List<Section> {
-        return lookup(curriculum = area, term = term)
+        return lookup(curriculum = area, term = term, openOnly = openOnly)
     }
 
     @JvmStatic
@@ -107,8 +107,8 @@ object Timetable {
         return try {
             Jsoup.parse(URL(GET_URL), 5000).body()
                     .getElementsByAttributeValue("name", "TERMYEAR")
-                    .first().allElements
-                    .drop(2)
+                    .first()
+                    .children()
                     .mapNotNull { it.attr("value") }
                     .distinct()
                     .map { Term(it) }

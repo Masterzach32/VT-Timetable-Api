@@ -1,10 +1,6 @@
 package net.masterzach32.timetable.obj
 
-import com.mashape.unirest.http.Unirest
 import net.masterzach32.timetable.Timetable
-import net.masterzach32.timetable.TimetableException
-import org.jsoup.Jsoup
-import org.jsoup.select.Elements
 
 /**
  * @author Zach Kozar

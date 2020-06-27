@@ -1,22 +1,18 @@
-import junit.framework.TestCase
-import net.masterzach32.timetable.Timetable
-import net.masterzach32.timetable.obj.Campus
-import net.masterzach32.timetable.obj.Curriculum
-import net.masterzach32.timetable.obj.Session
-import net.masterzach32.timetable.obj.Term
-import net.masterzach32.timetable.pullSectionComments
+import kotlinx.coroutines.*
+import net.masterzach32.timetable.*
+import net.masterzach32.timetable.obj.*
+import org.junit.jupiter.api.*
 
-class TestTimetable : TestCase() {
+/**
+ * TODO: write new tests
+ */
+class TestTimetable {
 
+    @Test
     fun testGetTerms() {
-        assertEquals(
-                Timetable.getAvailableTerms(),
-                listOf("202001").map { Term(it) }
-        )
-
-        Timetable.lookup(subjectCode = "ESM", term = Term("202001")).forEach { println(it) }
-        Timetable.lookupCrn("14709", term = Term("202001"))!!.pullSectionComments()
-                .also { println(it) }
+        runBlocking {
+            Timetable.lookup(subjectCode = "ESM", term = Term("202009")).forEach { println(it) }
+        }
     }
 
 //    fun testCurrentTerm() {

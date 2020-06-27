@@ -1,176 +1,157 @@
 package net.masterzach32.timetable
 
-import kong.unirest.Unirest
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.features.*
+import io.ktor.client.features.cookies.*
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import net.masterzach32.timetable.obj.*
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Element
-import org.slf4j.LoggerFactory
-import java.net.URL
+import org.jsoup.*
+import org.jsoup.nodes.*
+import org.slf4j.*
 import java.util.*
 
 object Timetable {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
-    const val GET_URL = "https://banweb.banner.vt.edu/ssb/prod/HZSKVTSC.P_DispRequest"
-    const val POST_URL = "https://banweb.banner.vt.edu/ssb/prod/HZSKVTSC.P_ProcRequest"
-    const val COMMENTS_URL = "https://banweb.banner.vt.edu/ssb/prod/HZSKVTSC.P_ProcComments"
+    const val GET_URL = "https://apps.es.vt.edu/ssb/HZSKVTSC.P_DispRequest"
+    const val POST_URL = "https://apps.es.vt.edu/ssb/HZSKVTSC.P_ProcRequest"
+    const val COMMENTS_URL = "https://apps.es.vt.edu/ssb/HZSKVTSC.P_ProcComments"
     private const val OPEN_ONLY_DEFAULT = false
 
-    @JvmStatic
+    internal val httpClient = HttpClient(OkHttp) {
+        BrowserUserAgent()
+        install(HttpCookies)
+    }
+
     @JvmOverloads
-    fun lookupCrn(
-            crn: String,
-            term: Term = getCurrentTerm(),
-            openOnly: Boolean = OPEN_ONLY_DEFAULT
+    suspend fun lookupCrn(
+        crn: String,
+        term: Term = getCurrentTerm(),
+        openOnly: Boolean = OPEN_ONLY_DEFAULT
     ): Section? {
         return lookup(
-                crn = crn,
-                term = term,
-                openOnly = openOnly
+            crn = crn,
+            term = term,
+            openOnly = openOnly
         ).firstOrNull()
     }
 
-    @JvmStatic
     @JvmOverloads
-    fun lookupCourse(
-            subjectCode: String,
-            courseNumber: String,
-            curriculum: Curriculum = Curriculum.All,
-            term: Term = getCurrentTerm(),
-            openOnly: Boolean = OPEN_ONLY_DEFAULT
+    suspend fun lookupCourse(
+        subjectCode: String,
+        courseNumber: String,
+        curriculum: Curriculum = Curriculum.All,
+        term: Term = getCurrentTerm(),
+        openOnly: Boolean = OPEN_ONLY_DEFAULT
     ): List<Section> {
         return lookup(
-                subjectCode = subjectCode,
-                courseNumber = courseNumber,
-                curriculum = curriculum,
-                term = term,
-                openOnly = openOnly
+            subjectCode = subjectCode,
+            courseNumber = courseNumber,
+            curriculum = curriculum,
+            term = term,
+            openOnly = openOnly
         )
     }
 
-    @JvmStatic
-    fun lookupCle(
-            area: Curriculum,
-            term: Term = getCurrentTerm(),
-            openOnly: Boolean = OPEN_ONLY_DEFAULT
+    @JvmOverloads
+    suspend fun lookupCle(
+        area: Curriculum,
+        term: Term = getCurrentTerm(),
+        openOnly: Boolean = OPEN_ONLY_DEFAULT
     ): List<Section> {
         return lookup(curriculum = area, term = term, openOnly = openOnly)
     }
 
-    @JvmStatic
-    fun lookup(
-            crn: String? = null,
-            subjectCode: String? = null,
-            courseNumber: String? = null,
-            curriculum: Curriculum = Curriculum.All,
-            term: Term = getCurrentTerm(),
-            campus: Campus = Campus.BLACKSBURG,
-            sectionType: SectionType? = null,
-            openOnly: Boolean = OPEN_ONLY_DEFAULT
+    @JvmOverloads
+    suspend fun lookup(
+        crn: String? = null,
+        subjectCode: String? = null,
+        courseNumber: String? = null,
+        curriculum: Curriculum = Curriculum.All,
+        term: Term = getCurrentTerm(),
+        campus: Campus = Campus.BLACKSBURG,
+        sectionType: SectionType? = null,
+        openOnly: Boolean = OPEN_ONLY_DEFAULT
     ): List<Section> {
-        val requestParams = getDefaultRequestParams()
-
-        requestParams["CAMPUS"] = campus.id
-        requestParams["TERMYEAR"] = term.code
-        requestParams["CORE_CODE"] = curriculum.code
+        var params = defaultRequestParams + parametersOf(
+            "CAMPUS" to listOf(campus.id.toString()),
+            "TERMYEAR" to listOf(term.code),
+            "CORE_CODE" to listOf(curriculum.code)
+        )
 
         if (crn != null) {
-            if (crn.length < 3)
-                throw TimetableException("Invalid CRN: must be longer than 3 characters.")
-            requestParams["crn"] = crn
+            require(crn.length > 3) {
+                "Invalid CRN: must be longer than 3 characters."
+            }
+            params += parametersOf("crn", crn)
         }
 
         if (subjectCode != null)
-            requestParams["subj_code"] = subjectCode
+            params += parametersOf("subj_code", subjectCode)
 
         if (courseNumber != null) {
-            if (courseNumber.length != 4)
-                throw TimetableException("Invalid Class Number: must be 4 characters.")
-            requestParams["CRSE_NUMBER"] = courseNumber
+            require(courseNumber.length != 4) {
+                "Invalid Class Number: must be 4 characters."
+            }
+            params += parametersOf("CRSE_NUMBER", courseNumber)
         }
 
-        if (subjectCode == null && courseNumber != null) {
-            throw TimetableException("A subject code must be supplied with a class number. (ie. ENGL 1105)")
-        }
+        if (subjectCode == null && courseNumber != null)
+            error("A subject code must be supplied with a class number. (ie. ENGL 1105)")
 
         if (sectionType != null)
-            requestParams["SCHDTYPE"] = sectionType.id
+            params += parametersOf("SCHDTYPE", sectionType.id)
 
-        requestParams["open_only"] = if (openOnly) "on" else ""
+        params += parametersOf("open_only", if (openOnly) "on" else "")
 
-        return parseTable(makeRequest(requestParams), term, campus)
+        val response: HttpResponse = httpClient.submitForm(POST_URL, params)
+
+        return parseTable(Jsoup.parse(response.readText()), term, campus)
     }
 
-    @JvmStatic
-    fun getAvailableTerms(): List<Term> {
-        return try {
-            Jsoup.parse(URL(GET_URL), 5000).body()
-                    .getElementsByAttributeValue("name", "TERMYEAR")
-                    .first()
-                    .children()
-                    .mapNotNull { it.attr("value") }
-                    .distinct()
-                    .map { Term(it) }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw TimetableException("Encountered an error while fetching available terms: $e")
-        }
+    suspend fun getAvailableTerms(): List<Term> {
+        val response: HttpResponse = httpClient.get(GET_URL)
+
+        return Jsoup.parse(response.readText()).body()
+            .getElementsByAttributeValue("name", "TERMYEAR")
+            .first()
+            .children()
+            .drop(1)
+            .filter { it.attr("value") != null }
+            .distinctBy { it.attr("value") }
+            .map { Term(it.attr("value")) }
     }
 
-    @JvmStatic
     fun getCurrentTerm(): Term {
         return Calendar.getInstance().run {
             Term(Session.forMonth(get(Calendar.MONTH).toString()), get(Calendar.YEAR).toString())
         }
     }
 
-    @JvmStatic
     @JvmOverloads
-    fun getAllSubjects(term: Term = getCurrentTerm()): List<String> {
-        val requestParams = getDefaultRequestParams()
+    suspend fun getAllSubjects(term: Term = getCurrentTerm()): List<String> {
+        val params = defaultRequestParams + parametersOf(
+            "CAMPUS" to listOf(Campus.BLACKSBURG.id.toString()),
+            "TERMYEAR" to listOf(term.code)
+        )
 
-        requestParams["CAMPUS"] = Campus.BLACKSBURG.id
-        requestParams["TERMYEAR"] = term.code
+        val response: HttpResponse = httpClient.submitForm(POST_URL, params)
 
-        try {
-            val doc = makeRequest(requestParams)
+        val regex1 = "case \"${term.code}\" :.+?break;".toRegex(setOf(RegexOption.DOT_MATCHES_ALL))
+        val regex2 = "\"([^\"]+)\",\"([\\w\\d&-]{2,4})\"".toRegex()
 
-            val reg = "^(case \"${term.code}\" :.+?break;)".toRegex(setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE))
-            val result = reg.find(doc.getElementsByTag("script").toString())!!
-            val block = result.groupValues.first().split("\n").drop(2)
-
-            val reg2 = "\"([A-z0-9]{2,4})\"".toRegex()
-
-            return block.map {
-                val res = reg2.find(it)
-                if (res != null)
-                    res.groupValues[1]
-                else
-                    ""
-            }.filter { it.isNotEmpty() }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw TimetableException("Encountered an error while fetching available subjects: $e")
-        }
+        return regex1.findAll(response.readText())
+            .flatMap { regex2.findAll(it.groupValues[0]) }
+            .map { it.groupValues[1] }
+            .toList()
     }
 
-    private fun makeRequest(requestParams: Map<String, Any>): Document {
-        val request = Unirest.post(POST_URL)
-                .fields(requestParams)
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36")
-
-        val response = try {
-            request.asString()
-        } catch (t: Throwable) {
-            logger.error("Could not read response from timetable: ${t.message}")
-            throw t
-        }
-
-        if (response.status != 200)
-            throw TimetableException("Could not access timetable! Received status code ${response.status}")
-
-        return Jsoup.parse(response.body)
+    suspend fun getSectionDetails(section: Section): SectionDetails {
+        return section.pullSectionDetails()
     }
 
     private fun parseTable(html: Document, term: Term, campus: Campus): List<Section> {
@@ -182,17 +163,17 @@ object Timetable {
             val row = rows[it]
             try {
                 val additionalData = when {
-                    it + 2 < rows.size -> listOf(rows[it+1], rows[it+2])
-                    it + 1 < rows.size -> listOf(rows[it+1])
+                    it + 2 < rows.size -> listOf(rows[it + 1], rows[it + 2])
+                    it + 1 < rows.size -> listOf(rows[it + 1])
                     else -> emptyList()
                 }
 
                 parseSection(row, additionalData, term, campus)
-                        .also { section -> if (section != null) sections.add(section) }
+                    .also { section -> if (section != null) sections.add(section) }
             } catch (e: Exception) {
                 logger.warn("Encountered ${e.javaClass.simpleName} when trying to parse row " +
-                        "\"${row.text()}\": ${e.message}. Skipping. Please make an issue on Github if you " +
-                        "believe this is an error with the API.")
+                    "\"${row.text()}\": ${e.message}. Skipping. Please make an issue on Github if you " +
+                    "believe this is an error with the API.")
                 e.printStackTrace()
             }
         }
@@ -236,7 +217,8 @@ object Timetable {
             examType = rowElements[if (arr) 10 else 11]
         }
 
-        var additionalTimes: Section.MeetingTime? = null
+        val meetingTimes: MutableList<MeetingTime> = mutableListOf(MeetingTime(days, startTime, endTime, location))
+
         var comments: String? = null
 
         for (it in additionalData) {
@@ -244,33 +226,33 @@ object Timetable {
             if (elements.first().contains("Comments for CRN")) {
                 comments = elements[1]
             } else if (elements.contains("* Additional Times *")) {
-                additionalTimes = Section.MeetingTime(elements[5], elements[6], elements[7], elements[8])
+                meetingTimes.add(MeetingTime(elements[5], elements[6], elements[7], elements[8]))
             } else {
                 break
             }
         }
 
-        return Section(
-                crn,
-                subjectCode,
-                courseNumber,
-                name,
-                term,
-                campus,
-                sectionType,
-                credits,
-                capacity,
-                instructor,
-                Section.MeetingTime(days, startTime, endTime, location),
-                examType,
-                additionalTimes,
-                comments
+        return SectionImpl(
+            crn,
+            term,
+            subjectCode,
+            courseNumber,
+            name,
+            campus,
+            sectionType,
+            credits,
+            capacity,
+            instructor,
+            examType,
+            meetingTimes,
+            comments
         )
     }
 
-    private fun getDefaultRequestParams() = mutableMapOf<String, Any>(
-            "BTN_PRESSED" to "FIND class sections",
-            "SCHDTYPE" to "%",
-            "disp_comments_in" to "Y"
-    )
+    val defaultRequestParams: Parameters
+        get() = parametersOf(
+            "BTN_PRESSED" to listOf("FIND class sections"),
+            "SCHDTYPE" to listOf("%"),
+            "disp_comments_in" to listOf("Y")
+        )
 }

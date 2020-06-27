@@ -1,57 +1,69 @@
 package net.masterzach32.timetable.obj
 
-import net.masterzach32.timetable.Timetable
+interface Section {
 
-/**
- * @author Zach Kozar
- * @version 8/7/2018
- */
-data class Section(
-        val crn: String,
-        val subjectCode: String,
-        val courseNumber: String,
-        val name: String,
-        val term: Term,
-        val campus: Campus,
-        val sectionType: SectionType,
-        val credits: String,
-        val capacity: Int,
-        val instructor: String,
-        val meeting: MeetingTime,
-        val examType: String,
-        val additionalTimes: MeetingTime? = null,
-        val comments: String? = null
-) {
+    /**
+     * The section's CRN (Course Request Number or Course Reference Number), between one and five digits.
+     */
+    val crn: String
 
-    val commentsUrl = Timetable.COMMENTS_URL + "?CRN=$crn&TERM=${term.month.id}&YEAR=${term.year}&SUBJ=$subjectCode&CRSE=$courseNumber&history=N"
+    /**
+     * The corresponding term.
+     */
+    val term: Term
 
-    data class MeetingTime(
-            val days: String,
-            val startTime: String,
-            val endTime: String,
-            val location: String
-    )
+    /**
+     * Subject of the section, usually the department code.
+     */
+    val subjectCode: String
 
-    data class Comments(
-            val description: String,
-            val meetingTimes: List<MeetingTime>,
-            val instructor: String,
-            val comments: String,
-            val crossLinkedWith: String,
-            val linkedWith: String,
-            val curriculum: String,
-            val prerequisites: String,
-            val corequisites: String,
-            val major: String,
-            val minor: String,
-            val college: String,
-            val level: String,
-            val `class`: String,
-            val campus: String,
-            val degree: String,
-            val program: String,
-            val hours: String,
-            val gpa: String,
-            val attribute: String
-    )
+    /**
+     * Course number.
+     */
+    val courseNumber: String
+
+    /**
+     * Title of the course.
+     */
+    val title: String
+
+    /**
+     * Campus the section is located on.
+     */
+    val campus: Campus
+
+    /**
+     * Type of class (lecture, seminar, lab...).
+     */
+    val type: SectionType
+
+    /**
+     * Number of credits for completing the class.
+     */
+    val credits: String
+
+    /**
+     * Total number of seats in the section.
+     */
+    val capacity: Int
+
+    /**
+     * Instructor that is teaching this section.
+     */
+    val instructor: String
+
+    /**
+     * The exam type code
+     */
+    val examType: String
+
+    /**
+     * Days/Times/Locations the section meets.
+     */
+    val meetingTimes: List<MeetingTime>
+
+    /**
+     * Any inline comments on the timetable.
+     */
+    val comments: String?
 }
